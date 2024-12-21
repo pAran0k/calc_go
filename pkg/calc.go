@@ -31,7 +31,7 @@ func tokenize(expression string) ([]string, error) {
 		if strings.Contains("+-*/()", string(token)) {
 			tokens = append(tokens, string(token))
 		} else if !(unicode.IsDigit(token) || token == '.' && currentNumber != "") {
-			return nil, errors.New("Expression is not valid")
+			return nil, ErrInvalidExpression
 		}
 	}
 	if currentNumber != "" {
@@ -54,7 +54,7 @@ func toRPN(tokens []string) ([]string, error) {
 
 			}
 			if len(stack) == 0 || stack[len(stack)-1] != "(" {
-				return nil, errors.New("Expression is not valid")
+				return nil, ErrInvalidExpression
 			}
 			stack = stack[:len(stack)-1]
 		} else {
@@ -77,7 +77,7 @@ func toRPN(tokens []string) ([]string, error) {
 	if len(stack) != 0 {
 		for len(stack) > 0 {
 			if stack[len(stack)-1] == "(" {
-				return nil, errors.New("Expression is not valid")
+				return nil, ErrInvalidExpression
 			}
 			out = append(out, stack[len(stack)-1])
 			stack = stack[:len(stack)-1]
@@ -86,6 +86,9 @@ func toRPN(tokens []string) ([]string, error) {
 	return out, nil
 }
 func Calc(expression string) (float64, error) {
+	if len(expression) == 0 {
+		return 0, ErrEmptyExpression
+	}
 	expr, err := tokenize(expression)
 	if err != nil {
 		return 0, err
@@ -101,7 +104,7 @@ func Calc(expression string) (float64, error) {
 
 		} else if _, ok := operators[rpn[i]]; ok {
 			if len(stack) < 2 {
-				return 0, errors.New("Expression is not valid")
+				return 0, ErrInvalidExpression
 			}
 			f := stack[len(stack)-2]
 			s := stack[len(stack)-1]
@@ -125,7 +128,7 @@ func Calc(expression string) (float64, error) {
 		}
 	}
 	if len(stack) != 1 {
-		return 0, errors.New("Expression is not valid")
+		return 0, ErrInvalidExpression
 	}
 	return stack[0], nil
 }
