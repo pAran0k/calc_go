@@ -88,6 +88,9 @@ func Calc(expression string) (float64, error) {
 	if len(expression) == 0 {
 		return 0, ErrEmptyExpression
 	}
+	if strings.Contains(expression, "()") {
+		return 0, ErrInvalidExpression
+	}
 	expr, err := tokenize(expression)
 	if err != nil {
 		return 0, err

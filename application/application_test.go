@@ -10,7 +10,7 @@ import (
 	"github.com/pAran0k/calc_go/application"
 )
 
-func TestCases(t *testing.T) {
+func TestCasesServer(t *testing.T) {
 	testCasesSuccess := []struct {
 		expression string
 		expected   string
