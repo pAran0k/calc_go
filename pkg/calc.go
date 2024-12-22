@@ -1,7 +1,6 @@
 package calculations
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 	"unicode"
@@ -119,7 +118,7 @@ func Calc(expression string) (float64, error) {
 				temp = f * s
 			case "/":
 				if s == 0 {
-					return 0, errors.New("division by 0")
+					return 0, ErrDivisionByZero
 				}
 				temp = f / s
 			}

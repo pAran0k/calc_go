@@ -55,11 +55,11 @@ func (a *Application) Run() error {
 }
 
 type Request struct {
-	Request string `json:"request"`
+	Request string `json:"expression"`
 }
 type Response struct {
 	Result float64 `json:"result,omitempty"`
-	Error  error   `json:"error,omitempty"`
+	Error  string  `json:"error,omitempty"`
 }
 
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,23 +69,25 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger := log.New(os.Stdout, "[HTTP]", log.Flags())
 	w.Header().Set("Content-Type", "application/json")
-	request := new(Request)
+	var request Request
 	defer r.Body.Close()
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		logger.Print("invalid JSON format")
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		logger.Print("error: invalid JSON format")
 		http.Error(w, "invalid JSON format", http.StatusBadRequest)
 		json.NewEncoder(w).Encode(Response{
-			Error: err,
+			Error: err.Error(),
 		})
-		return
+
 	} else {
 		res, err := calculations.Calc(request.Request)
 		if err != nil {
 			logger.Printf("error: %s", err.Error())
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			json.NewEncoder(w).Encode(Response{
-				Error: err,
+				Error: err.Error(),
 			})
+
 		} else {
 			json.NewEncoder(w).Encode(Response{
 				Result: res,
