@@ -1,56 +1,133 @@
-# calc_go
+# Распределённый вычислитель арифметических выражений
 ## Описание
-API для вычисления арифметических выражений. Выражение может содержать знаки операций +-/* и ().
-Принимает арифметическое выражение через POST-запрос на эндпоинт `/api/v1/calculate` и возвращает результат вычисления либо ошибку.
+с помощью Оркестратора и Агента параллельно вычисляет арифметические выражения. 
+
+Оркестратор принимает выражение, разбивает его на подзадачи и через http отдает их Агенту.
+
+Агент принимает задачи от Оркестратора, обрабатывает их, и возвращает результат оркестратору.
 ## Как использовать
-### Команда запуска:
-`go run ./cmd/main.go`
+### Запуск Оркестратора:
+`go run ./cmd/orchestrator/main.go`
+
+### Запуск Агента:
+`go run ./cmd/agent/main.go`
 
 Сервер запускается на порту `http://localhost:8080`
 
-Отправить запрос можно, используя Postman:
+## Эндпоинты:
+### 1.Оркестратор принимает выражение на эндпоинт:
+```bash
+ POST /api/v1/calculate
+```
+Пример запроса:
 
-**Запрос**
-```json
-  {
-      "expression" : "2+2"
-  }
-```
-**Ответ**
-```json
-  {
-      "result": 4
-  }
-```
-Либо же, используя curl
-
-**Запрос**
-```
-  curl --location 'http://localhost:8080/api/v1/calculate' \
-  --header 'Content-Type: application/json' \
-  --data '{
-      "expression" : "2+2"
-  }'
-```
-**Ответ**
-```json
-  {
-      "result": 4
-  }
+```bash
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json' \
+--data '{
+  "expression": "2+2"
+}'
 ```
 
-## HTTP
-| Статус | Код | Метод | Запрос | Ответ |
-| ---| --- | --- | --- | --- |
-| OK | 200 | POST | { "expression" : "2+2" }| {"result":4} |
-| Unprocessable Entity | 422 | POST | { "expression" : "2+2+" } | {"error":"expression is not valid"} |
-| Unprocessable Entity | 422 | POST | { "expression" : "2/0" } | {"error":"division by zero"} |
-| Unprocessable Entity | 422 | POST | { "expression" : "" } | {"error":"expression is empty"} |
-| Bad Request | 400 | POST | {"expression" : "} | {"error":"invalid character '\\r' in string literal"} |
-| Method Not Allowed | 405 | GET или другой метод | { "expression" : "2+2" } | not POST method |
+Успешный ответ (201):
+
+```json
+{
+    "id": "1"
+}
+```
+
+### 2. Получение списка выражений
+
+```bash
+GET /api/v1/expressions
+```
+
+Пример ответа (200):
+
+```json
+{
+    "expressions": [
+        {
+            "name": "2+2",
+            "status": 0,
+            "id": 1,
+            "result": 4,
+            "node": {
+                "value": "+",
+                "left": {
+                    "value": "2.000000"
+                },
+                "right": {
+                    "value": "2.000000"
+                }
+            }
+        },
+        {
+            "name": "2/0",
+            "status": 3,
+            "id": 2,
+            "result": 0,
+            "node": {
+                "value": "/",
+                "left": {
+                    "value": "2.000000"
+                },
+                "right": {
+                    "value": "0.000000"
+                }
+            }
+        }
+    ]
+}
+```
+
+### 3. Получение выражения по ID
+
+```bash
+GET /api/v1/expressions/{id}
+```
+
+Пример запроса:
+
+```bash
+curl http://localhost:8080/api/v1/expressions/1
+```
+
+Ответ (200):
+
+```json
+{
+    "expression": {
+        "name": "2+2",
+        "status": 0,
+        "id": 1,
+        "result": 4,
+        "node": {
+            "value": "+",
+            "left": {
+                "value": "2.000000"
+            },
+            "right": {
+                "value": "2.000000"
+            }
+        }
+    }
+}
+```
+
+
+
+# Переменные окружения
+- `TIME_ADDITION_MS` - время сложения (мс)
+- `TIME_SUBTRACTION_MS` - время вычитания (мс)
+- `TIME_MULTIPLICATIONS_MS` - время умножения (мс)
+- `TIME_DIVISIONS_MS` - время деления (мс)
+- `ORCHESTRATOR_ADDR` - URL оркестратора
+- `COMPUTING_POWER` - количество параллельных задач
+
 
 ## Запуск тестов
-`go test pkg/calc_test.go -v `
+`go test internal\services\agent\agent_test.go -v `
 
-`go test application/application_test.go -v`
 
